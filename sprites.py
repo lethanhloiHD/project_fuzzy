@@ -4,6 +4,7 @@ from random import uniform
 from settings import *
 from tilemap import collide_hit_rect
 from dijkstra import *
+from defuzzy import  *
 vec = pg.math.Vector2
 
 def collide_with_walls(sprite, group, dir):
@@ -44,7 +45,11 @@ class Car(pg.sprite.Sprite):
         self.car_speed = PLAYER_SPEED
         self.vt = 0
         self.index = 0
+        self.index_next = 1
+
         self.rot_speed = 0
+        self.status_light = ""
+
         # self.target_dis = 10
 
     # def get_keys(self):
@@ -61,8 +66,8 @@ class Car(pg.sprite.Sprite):
     #         self.vel = vec(-PLAYER_SPEED / 2, 0).rotate(-self.rot)
 
     def move(self):
-        self.rot = (self.game.path[self.index].pos - self.pos).angle_to(vec(1, 0))
-        self.rot = (self.rot + self.rot_speed * self.game.dt) % 360
+
+        # print(self.rot)
         self.image = pg.transform.rotate(self.game.player_img, self.rot )
         self.rect = self.image.get_rect()
         self.rect.center = self.pos
@@ -70,9 +75,11 @@ class Car(pg.sprite.Sprite):
         self.acc += self.vel * -1
         self.vel += self.acc * self.game.dt
         self.pos += self.vel * self.game.dt + self.acc * self.game.dt
-
+        # print(self.acc)
         self.hit_rect.centerx = self.pos.x
         collide_with_walls(self, self.game.walls, 'x')
+
+
         self.hit_rect.centery = self.pos.y
         collide_with_walls(self, self.game.walls, 'y')
         self.rect.center = self.hit_rect.center
@@ -80,67 +87,78 @@ class Car(pg.sprite.Sprite):
     def get_distance(self,index):
         self.distance = math.sqrt((self.game.path[index].pos.x - self.pos.x) ** 2 +
                                   (self.game.path[index].pos.y - self.pos.y) ** 2)
+        # print(self.distance)
 
     def update(self):
+
+        if (self.game.color_light == RED):
+            self.status_light = "red"
+        if (self.game.color_light == YELLOW):
+            self.status_light = "red"
+        if (self.game.color_light == GREEN):
+            self.status_light = "green"
+
+        self.angle = (self.game.path[self.index].pos - self.pos).angle_to(vec(1,0))
+        self.angle_next  = (self.game.path[self.index_next].pos - self.pos).angle_to(vec(1,0))
+        self.abs = math.fabs(self.angle_next) % 90
+
+        # print(self.abs)
+        # print(self.index_next)
+
         self.get_distance(self.index)
+
+        self.rot = (self.rot + self.rot_speed * self.game.dt) % 360
+        self.rot = self.angle
         self.move()
-        if(self.distance < 20) :
+        # if (self.abs > 65):
+        #     self.rot_speed = self.angle_next/2
+        # if(self.abs > 75  ) :
+        #     self.rot_speed = self.angle_next
+        # if (self.abs > 80):
+        #     self.rot_speed = 0
+        if self.distance < 30 :
             self.index += 1
+            # self.index_next += 1
             if (self.index > (len(self.game.path) - 1)):
                 self.index = len(self.game.path) - 1
-            # if (self.distance < 19):
-            #     self.car_speed = 0
-        self.target_dis = math.sqrt((self.game.path[len(self.game.path) - 1].pos.x - self.pos.x) ** 2 +
-                                        (self.game.path[len(self.game.path) - 1].pos.y - self.pos.y) ** 2)
-        # print(self.target_dis)
-        if(self.target_dis < 40):
-            self.car_speed =0
+            # if (self.index_next > (len(self.game.path) - 1)):
+            #     self.index_next = len(self.game.path) - 1
+
         self.change_speed_traffic()
-        # self.change_speed_dis()
 
     def change_speed_traffic(self):
-        self.distance_traffic = math.sqrt((self.game.pos_traffic.pos.x - self.pos.x) ** 2 +
-                                          (self.game.pos_traffic.pos.y - self.pos.y) ** 2)
-        # print(self.distance_traffic)
-        if(self.game.times > 0 and self.game.color_light == RED) :
-            if (self.distance_traffic < 300):
-                self.vt = 50
-                self.car_speed -= self.vt * self.game.dt
-            if (self.distance_traffic < 200):
-                self.vt = 150
-                self.car_speed -= self.vt * self.game.dt
-            if (self.distance_traffic < 100):
-                self.vt = 200
-                self.car_speed -= self.vt * self.game.dt
-            if (self.car_speed < 0):
-                self.car_speed = 0
+        if (self.game.stone_bool):
+            for i in range(len(self.game.list_stones)):
+                self.angle_stone = (self.game.list_stones[i].pos - self.pos).angle_to(vec(1, 0))
+                self.abs_angle_stone = math.fabs(math.fabs(self.angle_stone) - math.fabs(self.angle))
+                # print(self.abs_angle_stone)
+                if(self.abs_angle_stone < 30) :
+                    self.distance_stone = math.sqrt((self.game.list_stones[i].rect.x - self.pos.x) ** 2 +
+                                                    (self.game.list_stones[i].rect.y - self.pos.y) ** 2)
+                    self.car_speed = dependency_stone(self.distance_stone)
 
-        if (self.game.times > 0 and self.game.color_light == GREEN):
-            self.vt = 50
-            self.car_speed += self.vt * self.game.dt
-            if (self.car_speed > PLAYER_SPEED):
-                self.car_speed = PLAYER_SPEED
+        else:
+            self.target_dis = math.sqrt((self.game.path[len(self.game.path) - 1].pos.x - self.pos.x) ** 2 +
+                                        (self.game.path[len(self.game.path) - 1].pos.y - self.pos.y) ** 2)
 
-    # def distance_lighttraffic(self):
-    #     self.distance_traffic = math.sqrt((self.game.pos_traffic.pos.x - self.pos.x) ** 2 +
-    #                               (self.game.pos_traffic.pos.y - self.pos.y) ** 2)
-    #
-    #     if(self.distance_traffic < 100  ) :
-    #         self.vt = 10
-    #         self.car_speed -= self.vt * self.game.dt
-    #         if(self.car_speed < 0) :
-    #             self.car_speed = 0
-    #     if (self.distance_traffic< 50 ):
-    #         self.vt = 150
-    #         self.car_speed -= self.vt * self.game.dt
-    #         if (self.car_speed < 0):
-    #             self.car_speed = 0
-    #     if (self.distance_traffic < 10 ):
-    #         self.vt = 200
-    #         self.car_speed -= self.vt * self.game.dt
-    #         if (self.car_speed < 0):
-    #             self.car_speed = 0
-    # # def move_player()
+            self.car_speed = dependency_stone(self.target_dis)
+
+            for i in range(len(self.game.pos_traffics)):
+                self.angle_light = (self.game.pos_traffics[i].pos - self.pos).angle_to(vec(1, 0))
+                print("angle : ",self.angle )
+                print("angle_traffic :",self.angle_light)
+                self.abs_angle_traffic = math.fabs(math.fabs(self.angle_light) - math.fabs(self.angle))
+
+                print("do lech khoang goc :", self.abs_angle_traffic)
+
+                if ( self.abs_angle_traffic < 60 ) :
+                    self.distance_traffic = math.sqrt((self.game.pos_traffics[i].pos.x - self.pos.x) ** 2 +
+                                                  (self.game.pos_traffics[i].pos.y - self.pos.y) ** 2)
+                    # print(self.distance_traffic)
+                    self.car_speed = dependency_traffic(60,self.status_light,self.distance_traffic,self.game.times)
+
+
+
 
 
 class Obstacle(pg.sprite.Sprite):
@@ -154,121 +172,36 @@ class Obstacle(pg.sprite.Sprite):
         self.y = y
         self.rect.x = x
         self.rect.y = y
-# class Walk(pg.sprite.Sprite) :
-#     def __init__(self,game,x,y,w,h):
-#         self.groups = game.cross_roads
-#         pg.sprite.Sprite.__init__(self, self.groups)
-#         self.game = game
-#         self.image = game.maker_img
-#         self.rect = pg.Rect(x, y, w, h)
-#         # self.pos = vec(x, y)
-#         self.x = x
-#         self.y = y
-#         self.rect.x = x
-#         self.rect.y = y
-#         # self.hit_rect = PLAYER_HIT_RECT
-#         # self.hit_rect.center = self.rect.center
-class Maker(pg.sprite.Sprite) :
-    def __init__(self,game,x,y):
+        self.stone_img = self.game.stone_img
+        self.pos = vec(x, y)
+    # def update(self):
+
+
+class Stone(pg.sprite.Sprite):
+    def __init__(self, game, x, y, w, h):
         self.groups = game.stones
         pg.sprite.Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = game.maker_img
-        self.rect = self.image.get_rect()
+        self.stone_img = self.game.stone_img
+        self.rect = pg.Rect(x, y, w, h)
+        self.hit_rect = self.rect
+        self.x = x
+        self.y = y
+        self.rect.x = x
+        self.rect.y = y
         self.pos = vec(x, y)
-        #
-        #
-        # self.groups = game.all_sprites
-        # pg.sprite.Sprite.__init__(self, self.groups)
-        # self.game = game
-        # self.image = game.player_img
-        # self.rect = self.image.get_rect()
-        # self.hit_rect = PLAYER_HIT_RECT
-        # self.hit_rect.center = self.rect.center
-        # self.vel = vec(0, 0)
-        # self.pos = vec(x, y)
-        # self.rot = 0
-        # self.last_shot = 0
-        # self.health = PLAYER_HEALTH
-# class Mob(pg.sprite.Sprite):
-#     def __init__(self, game, x, y):
-#         self.groups = game.all_sprites
-#         pg.sprite.Sprite.__init__(self, self.groups)
-#         self.game = game
-#         self.image = game.player_img
-#         self.rect = self.image.get_rect()
-#         self.hit_rect = MOB_HIT_RECT.copy()
-#         self.hit_rect.center = self.rect.center
-#         self.pos = vec(x, y)
-#         self.vel = vec(0, 0)
-#         self.acc = vec(0, 0)
-#         self.rect.center = self.pos
-#         self.rot = 0
-#         self.health = MOB_HEALTH
-#         self.mos_speed = MOB_SPEED
-#
-#     def update(self):
-#         self.rot = (self.game.car.pos - self.pos).angle_to(vec(10, 0))
-#         # print(self.rot)
-#         self.image = pg.transform.rotate(self.game.player_img, self.rot)
-#         self.rect = self.image.get_rect()
-#         self.rect.center = self.pos
-#         self.acc = vec(self.mos_speed, 0).rotate(-self.rot)
-#         self.acc += self.vel * -1
-#         self.vel += self.acc * self.game.dt
-#         self.pos += self.vel * self.game.dt + 0.5 * self.acc * self.game.dt ** 2
-#         self.hit_rect.centerx = self.pos.x
-#         collide_with_walls(self, self.game.walls, 'x')
-#         self.hit_rect.centery = self.pos.y
-#         collide_with_walls(self, self.game.walls, 'y')
-#         self.rect.center = self.hit_rect.center
-#         if self.health <= 0:
-#             self.kill()
-# #
-#     def draw_health(self):
-#         if self.health > 60:
-#             col = GREEN
-#         elif self.health > 30:
-#             col = YELLOW
-#         else:
-#             col = RED
-#         width = int(self.rect.width * self.health / MOB_HEALTH)
-#         self.health_bar = pg.Rect(0, 0, width, 7)
-#         if self.health < MOB_HEALTH:
-#             pg.draw.rect(self.image, col, self.health_bar)
 
-# class Bullet(pg.sprite.Sprite):
-#     def __init__(self, game, pos, dir):
-#         self.groups = game.all_sprites, game.bullets
-#         pg.sprite.Sprite.__init__(self, self.groups)
-#         self.game = game
-#         self.image = game.bullet_img
-#         self.rect = self.image.get_rect()
-#         self.hit_rect = self.rect
-#         self.pos = vec(pos)
-#         self.rect.center = pos
-#         spread = uniform(-GUN_SPREAD, GUN_SPREAD)
-#         self.vel = dir.rotate(spread) * BULLET_SPEED
-#         self.spawn_time = pg.time.get_ticks()
-#
-#     def update(self):
-#         self.pos += self.vel * self.game.dt
-#         self.rect.center = self.pos
-#         if pg.sprite.spritecollideany(self, self.game.walls):
-#             self.kill()
-#         if pg.time.get_ticks() - self.spawn_time > BULLET_LIFETIME:
-#             self.kill()
+class Maker(pg.sprite.Sprite) :
+    def __init__(self,game,x,y):
+        self.groups = game.makers
+        pg.sprite.Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image_start = game.maker_img_start
+        self.image_end = game.maker_img_end
+        self.rect = self.image_start.get_rect()
+        self.pos = vec(x, y)
+        self.traffic_img = game.traffic_img
 
-# class Wall(pg.sprite.Sprite):
-#     def __init__(self, game, x, y):
-#         self.groups = game.all_sprites, game.walls
-#         pg.sprite.Sprite.__init__(self, self.groups)
-#         self.game = game
-#         self.image = game.wall_img
-#         self.rect = self.image.get_rect()
-#         self.x = x
-#         self.y = y
-#         self.rect.x = x * TILESIZE
-#         self.rect.y = y * TILESIZE
+
 
 

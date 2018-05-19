@@ -1,49 +1,95 @@
-import math
-
-# ANGLE_SMALL = "angle_small"
-
-def muy_angle_small(arg) :
-    if arg <= 7 :
-        return 1
-    elif arg >7 :
-        return (14 - arg) / 7
 
 
-def muy_angle_medium(arg) :
-    if arg <= 12 :
-        return (arg -7) / 5
-    elif arg <=16 and arg >=12 :
-        return 1
-    elif arg > 16 :
-        return (21-arg) / 5
+#TRAFFIC
 
-def muy_angle_big(arg) :
-    if arg < 21 :
-        return (arg - 14)/7
-    elif arg >= 21 :
-        return 1
+def red(arg) :
+    if arg <= 4 :
+        return 1.0
+    elif arg > 4 :
+        return (6 - arg) / 2
 
 
-# DISTANCE_NEAR = "dis_near"
+def very_red(arg) :
+    if arg < 6 :
+        return (arg-4) / 2
+    elif arg  >= 6 :
+        return 1.0
 
 
-def muy_angle_near(arg) :
-    if arg <= 50 :
-        return 1
-    elif arg > 50 :
+def green(arg) :
+    if arg <= 4 :
+        return 1.0
+    elif arg > 4 :
+        return (6 - arg) / 2
+
+
+def very_green(arg) :
+    if arg < 6 :
+        return (arg - 4) / 2
+    elif arg  >= 6 :
+        return 1.0
+
+
+# DISTANCE_TRAFFIC
+
+
+def traffic_near(arg) :
+    if arg <= 80 :
+        return 1.0
+    elif arg > 80 :
+        return (140 - arg) / 60
+
+
+def traffic_medium(arg) :
+    if arg < 140 :
+        return (arg -80) / 60
+    elif arg <= 170 and arg >= 140 :
+        return 1.0
+    elif arg > 170 :
+        return (170 - arg) / 50
+
+
+
+def traffic_far(arg) :
+    if arg < 220 :
+        return (arg - 170)/ 50
+    elif arg >= 220 :
+        return 1.0
+
+#DISTANCE STONE
+
+def stone_near(arg) :
+    if arg <= 60 :
+        return 1.0
+    elif arg > 60 :
+        return (120 - arg) / 60
+
+
+def stone_medium(arg) :
+    if arg < 120 :
+        return (arg -60) / 60
+    elif arg <= 150 and arg >= 120 :
+        return 1.0
+    elif arg > 150 :
         return (150 - arg) / 50
 
 
-def muy_angle_medium(arg) :
-    if arg < 80 :
-        return (arg -7) / 5
-    elif arg <=16 and arg >=12 :
-        return 1
-    elif arg > 16 :
-        return (21-arg) / 5
 
-def muy_angle_far(arg) :
-    if arg < 21 :
-        return (arg - 14)/7
-    elif arg >= 21 :
-        return 1
+def stone_far(arg) :
+    if arg < 200 :
+        return (arg - 150)/ 50
+    elif arg >= 200 :
+        return 1.0
+
+# ANGLE
+
+def angle_small(arg) :
+    if arg <= 30 :
+        return 1.0
+    elif arg > 30 :
+        return (60 - arg) / 30
+def angle_big(arg) :
+    if ( arg >= 60 ):
+        return 1.0
+    elif arg < 60 :
+        return (arg - 30)/30
